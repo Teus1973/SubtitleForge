@@ -1,0 +1,5 @@
+streamlit>=1.30.0
+ffmpeg-python>=0.2.0
+faster-whisper>=1.0.0
+ffsubsync>=0.4.25
+pysrt>=1.1.2

@@ -1,0 +1,36 @@
+# Virtual environment
+venv/
+
+# Temp / generated files
+temp/*.wav
+temp/*.mp4
+temp/*.mkv
+temp/*.avi
+temp/*.mov
+temp/*.webm
+temp/*.srt
+# Keep the .gitignore itself inside temp/
+!temp/.gitignore
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Test / coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code
+.vscode/settings.json
+
+# Cursor
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Whisper model cache (downloaded at runtime, not source)
+# Hugging Face cache lives in %USERPROFILE%\.cache by default — nothing to ignore here
