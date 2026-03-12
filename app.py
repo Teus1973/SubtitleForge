@@ -8,6 +8,7 @@ Run with:
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -102,47 +103,48 @@ st.markdown(
     "SRT file — all locally, using open-source AI."
 )
 
-# -- Video input (uploader + local-path fallback) --------------------------
+# -- Video input (local path only — no browser upload for large files) -----
 st.subheader("1. Select Video")
 
-col_upload, col_path = st.columns(2)
+st.caption(
+    "Enter the full path to your video file on this machine. "
+    "The file is read directly from disk — nothing is uploaded through the browser."
+)
 
-with col_upload:
-    uploaded_video = st.file_uploader(
-        "Upload video (< 2 GB)",
-        type=["mp4", "mkv", "avi", "mov", "webm"],
-        key="video_uploader",
-    )
+col_path, col_btn = st.columns([5, 1])
 
 with col_path:
     local_video_path_str = st.text_input(
-        "Or enter a local file path (for large files)",
-        placeholder=r"C:\Videos\movie.mkv",
+        "Full path to video file",
+        placeholder=r"C:\Videos\movie.mkv  or  E:\Shows\episode.mkv",
         key="video_path_input",
+        label_visibility="collapsed",
     )
 
+with col_btn:
+    load_clicked = st.button("Load Video", use_container_width=True)
 
-def _resolve_video_path() -> Path | None:
-    """Determine the effective video path from uploader or text input."""
-    if local_video_path_str.strip():
-        p = Path(local_video_path_str.strip())
-        if p.is_file():
-            return p
-        st.error(f"File not found: `{p}`")
-        return None
+# Persist a validated path in session state so it survives reruns
+# without the user having to click "Load" again.
+if load_clicked:
+    raw = local_video_path_str.strip()
+    if not raw:
+        st.error("Please enter a file path first.")
+        st.session_state["video_path_validated"] = None
+    elif not os.path.exists(raw):
+        st.error(f"File not found: `{raw}`")
+        st.session_state["video_path_validated"] = None
+    elif not os.path.isfile(raw):
+        st.error(f"Path exists but is not a file: `{raw}`")
+        st.session_state["video_path_validated"] = None
+    else:
+        st.session_state["video_path_validated"] = raw
+        st.success(f"Loaded: `{os.path.basename(raw)}`")
 
-    if uploaded_video is not None:
-        dest = TEMP_DIR / uploaded_video.name
-        if not dest.exists() or dest.stat().st_size != uploaded_video.size:
-            with open(dest, "wb") as f:
-                f.write(uploaded_video.getbuffer())
-            temp_manager.register(dest)
-        return dest
-
-    return None
-
-
-video_path = _resolve_video_path()
+video_path: Path | None = None
+validated = st.session_state.get("video_path_validated")
+if validated:
+    video_path = Path(validated)
 
 # -- Audio track probing & selection ----------------------------------------
 st.subheader("2. Select Audio Track")
@@ -176,7 +178,8 @@ elif video_path is not None:
 # -- Optional SRT upload ---------------------------------------------------
 st.subheader("3. Optional — Upload Existing SRT to Sync")
 uploaded_srt = st.file_uploader(
-    "Upload an SRT file to sync (leave empty to generate new subtitles from scratch)",
+    "Upload an SRT file to sync (a few KB — safe to upload via browser). "
+    "Leave empty to generate new subtitles from scratch.",
     type=["srt"],
     key="srt_uploader",
 )
